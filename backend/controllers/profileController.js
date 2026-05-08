@@ -21,7 +21,7 @@ function searchUsers(req, res) {
     res.json(results)
 }
 
-GPUShaderModule.exports = {
+module.exports = {
     getProfileById,
     searchUsers,
 }
