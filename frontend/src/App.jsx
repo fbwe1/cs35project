@@ -5,11 +5,9 @@ function App() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  //Will be detirmined from the loginin database.
-  const currentUserId = 1; 
+  const currentUserId = 1;
 
-  // Fetch initial data from our Node backend when the app loads
-  useEffect(() => {
+  const fetchRides = () => {
     fetch('http://localhost:3001/api/rides')
       .then(res => res.json())
       .then(data => {
@@ -20,7 +18,9 @@ function App() {
         console.error("Error fetching rides:", err);
         setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => { fetchRides(); }, []);
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
@@ -33,8 +33,9 @@ function App() {
         rides.map(ride => (
           <RideCard 
             key={ride.id} 
-            initialRideData={ride} 
-            currentUserId={currentUserId} 
+            ride={ride} 
+            currentUserId={currentUserId}
+            onUpdate={fetchRides}
           />
         ))
       ) : (

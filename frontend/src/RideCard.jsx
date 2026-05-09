@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 
-const RideCard = ({ initialRideData, currentUserId }) => {
-  const [ride, setRide] = useState(initialRideData); //details about the ride itself(will change however) 
-  const [loading, setLoading] = useState(false); //prevent spam clicking
-  const [errorMsg, setErrorMsg] = useState(""); //error messaging
+const RideCard = ({ ride, currentUserId, onUpdate }) => {
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const hasJoined = ride.passengers.includes(currentUserId);
+  const hasJoined = ride.passengers && ride.passengers.includes(currentUserId);
   const isDisabled = loading || (!hasJoined && ride.available_seats <= 0);
 
   const handleJoinLeave = async () => {
@@ -17,7 +16,7 @@ const RideCard = ({ initialRideData, currentUserId }) => {
       const response = await fetch(`http://localhost:3001/api/rides/${ride.id}/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId }) 
+        body: JSON.stringify({ userId: currentUserId })
       });
 
       const data = await response.json();
@@ -25,23 +24,9 @@ const RideCard = ({ initialRideData, currentUserId }) => {
       if (!response.ok) {
         setErrorMsg(data.error || "Something went wrong on the server");
       } else {
-        // Update the UI instantly upon success
-        setRide(prevRide => {
-          if (action === 'join') {
-            return {
-              ...prevRide,
-              available_seats: prevRide.available_seats - 1,
-              passengers: [...prevRide.passengers, currentUserId]
-            };
-          } else {
-            return {
-              ...prevRide,
-              available_seats: prevRide.available_seats + 1,
-              passengers: prevRide.passengers.filter(id => id !== currentUserId)
-            };
-          }
-        });
+        onUpdate(); // Re-fetch all rides to update UI instantly
       }
+
     } catch (err) {
       setErrorMsg("Failed to connect to the backend server.");
     } finally {
@@ -56,7 +41,7 @@ const RideCard = ({ initialRideData, currentUserId }) => {
   return (
     <div style={{ border: '1px solid #ccc', padding: '16px', margin: '10px 0', borderRadius: '8px', maxWidth: '400px' }}>
       <h3>{ride.pickup_location} ➡️ {ride.destination}</h3>
-      <p><strong>Riders:</strong> {ride.passengers.length} / {ride.total_seats}</p>
+      <p><strong>Riders:</strong> {(ride.passengers || []).length} / {ride.total_seats}</p>
       
       {errorMsg && <p style={{ color: 'red', fontSize: '14px' }}>{errorMsg}</p>}
 

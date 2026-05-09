@@ -1,82 +1,81 @@
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-//We need to use a mysql data base for this probably the same one as the passwords. 
-let ridesDB = [
-  { id: 1, pickup_location: "Test_1", destination: "Location 1", total_seats: 4, available_seats: 2, passengers: [99, 100] },
-  { id: 2, pickup_location: "Test_2", destination: "Location 2", total_seats: 3, available_seats: 0, passengers: [10, 11, 12] }
-];
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-//Simulating database time. 
-const simulateDbDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
-
-//Get rides from the database
 app.get('/api/rides', async (req, res) => {
   try {
-    await simulateDbDelay(300); // Fake 300ms database read time
-    res.json(ridesDB);
+    const { data: rides, error } = await supabase
+      .from('rides')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      // THIS IS THE IMPORTANT LINE:
+      console.error("SUPABASE ERROR DETAILS:", error.message, error.details, error.hint);
+      throw error;
+    }
+    res.json(rides);
   } catch (error) {
-    res.status(500).json({ error: "Database connection failed" });
+    res.status(500).json({ error: "Database connection failed", details: error.message });
   }
 });
 
-//Join a ride
 app.post('/api/rides/:rideId/join', async (req, res) => {
   try {
     const rideId = parseInt(req.params.rideId);
     const { userId } = req.body; 
 
-    //Remove this for simulation purposes for databases.
-    await simulateDbDelay(600); 
+    // 1. Fetch current ride
+    const { data: ride, error: fetchError } = await supabase.from('rides').select('*').eq('id', rideId).single();
+    if (fetchError || !ride) return res.status(404).json({ error: "Ride not found" });
+    if (ride.available_seats <= 0) return res.status(400).json({ error: "Ride is full" });
+    if (ride.passengers && ride.passengers.includes(userId)) return res.status(400).json({ error: "Already joined" });
 
-    const ride = ridesDB.find(r => r.id === rideId);
-    
-    if (!ride){
-      return res.status(404).json({ error: "Ride not found" });
-    }
-    if (ride.available_seats <= 0){
-      return res.status(400).json({ error: "Ride is full" });
-    }
-    if (ride.passengers.includes(userId)){
-      return res.status(400).json({ error: "Already joined" });
-    }
+    const updatedSeats = ride.available_seats - 1;
+    const updatedPassengers = [...(ride.passengers || []), userId];
 
-    // Update our mock database
-    ride.available_seats -= 1;
-    ride.passengers.push(userId);
+    const { data: updatedRide, error: updateError } = await supabase
+      .from('rides')
+      .update({ available_seats: updatedSeats, passengers: updatedPassengers })
+      .eq('id', rideId)
+      .select()
+      .single();
 
-    res.json({ success: true, message: "Joined successfully", ride });
+    if (updateError) throw updateError;
+    res.json({ success: true, ride: updatedRide });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// 3. POST ROUTE: Leave a ride (Async)
 app.post('/api/rides/:rideId/leave', async (req, res) => {
   try {
     const rideId = parseInt(req.params.rideId);
     const { userId } = req.body;
 
-    await simulateDbDelay(600); 
+    const { data: ride, error: fetchError } = await supabase.from('rides').select('*').eq('id', rideId).single();
+    if (fetchError || !ride) return res.status(404).json({ error: "Ride not found" });
+    if (!ride.passengers || !ride.passengers.includes(userId)) return res.status(400).json({ error: "Not a passenger" });
 
-    const ride = ridesDB.find(r => r.id === rideId);
-    
-    if (!ride){
-      return res.status(404).json({ error: "Ride not found" });
-    }
-    if (!ride.passengers.includes(userId)){
-      return res.status(400).json({ error: "Not a passenger" });
-    }
+    const updatedSeats = ride.available_seats + 1;
+    const updatedPassengers = ride.passengers.filter(id => id !== userId);
 
-    // Update our mock database
-    ride.available_seats += 1;
-    ride.passengers = ride.passengers.filter(id => id !== userId);
+    const { data: updatedRide, error: updateError } = await supabase
+      .from('rides')
+      .update({ available_seats: updatedSeats, passengers: updatedPassengers })
+      .eq('id', rideId)
+      .select()
+      .single();
 
-    res.json({ success: true, message: "Left successfully", ride });
+    if (updateError) throw updateError;
+    res.json({ success: true, ride: updatedRide });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -84,5 +83,5 @@ app.post('/api/rides/:rideId/leave', async (req, res) => {
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`Running on http://localhost:${PORT}`);
+  console.log(`Running on http://localhost:${PORT} (Connected to Supabase)`);
 });
