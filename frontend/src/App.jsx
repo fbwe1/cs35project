@@ -8,7 +8,7 @@ function App() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const currentUserId = 251;
+  const currentUserId = 251; // Simulating as a random ID. In the real app this comes from auth maybe just generate a userID for each user when signing up.
 
   const fetchRides = () => {
     fetch('http://localhost:3001/api/rides')
