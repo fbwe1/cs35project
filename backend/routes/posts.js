@@ -1,49 +1,80 @@
-const express = require('express');
-const router = express.Router(); 
-//temporary in memory storage until database is initialized
-let posts = [];
-//Create post 
-router.post("/", (req,res) => {
-    const { title,content, userId } = req.body;
+const express = require("express");
+const router = express.Router();
+const supabase = require("../supabaseClient");
 
-    if (!title || !content || !userId ) {
+// Create post
+router.post("/", async (req, res) => {
+    const { title, content, userId } = req.body;
+
+    if (!title || !content || !userId) {
         return res.status(400).json({
-            error: "title, content and userId are required fields"
+            error: "title, content and userId are required"
         });
     }
-    const newPost = {
-        id: Date.now(),
-        title, 
-        content,
-        userId,
-        createdAt: new Date()
-    };
-    posts.push(newPost);
-    res.status(201).json(newPost);
-});
-//Get all posts
-router.get("/", (req,res) => {
-    res.json(posts);
+
+    const { data, error } = await supabase
+        .from("posts")
+        .insert([
+            {
+                title,
+                content,
+                user_id: userId
+            }
+        ])
+        .select()
+        .single();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json(data);
 });
 
-//Get single post
-router.get("/:id", (req,res) =>{
-    const postId = Number(req.params.id);
-    const post = posts.find(p => p.id === postId);
-    if (!post) {
-        return res.status(404).json({ error: "Post not found" });
+// Get all posts
+router.get("/", async (req, res) => {
+    const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
     }
-    res.json(post);
+
+    res.json(data);
 });
 
-//Delete post
-router.delete("/:id", (req,res) => {
+// Get single post
+router.get("/:id", async (req, res) => {
     const postId = Number(req.params.id);
-    const postExists = posts.some(p => p.id === postId);
-    if(!postExists) {
+
+    const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", postId)
+        .single();
+
+    if (error) {
         return res.status(404).json({ error: "Post not found" });
     }
-    posts = posts.filter(p => p.id !== postId);
+
+    res.json(data);
+});
+
+// Delete post
+router.delete("/:id", async (req, res) => {
+    const postId = Number(req.params.id);
+
+    const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId);
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
     res.json({ message: "Post deleted" });
 });
 
