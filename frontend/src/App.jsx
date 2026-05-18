@@ -10,6 +10,7 @@ function App() {
   const [destinationFilter, setDestinationFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('');
+  const [minSeatsFilter, setMinSeatsFilter] = useState('');
   const [isFilterActive, setIsFilterActive] = useState(false);
 
   //Will be detirmined from the loginin database.
@@ -24,6 +25,7 @@ function App() {
     if (filters.destination) params.append('destination', filters.destination);
     if (filters.date) params.append('date', filters.date);
     if (filters.time) params.append('time', filters.time);
+    if (filters.minSeats) params.append('minSeats', filters.minSeats);
 
     const queryString = params.toString();
     const url = `http://localhost:3001/api/rides${queryString ? '?' + queryString : ''}`;
@@ -52,6 +54,7 @@ function App() {
     if (destinationFilter.trim()) filters.destination = destinationFilter.trim();
     if (dateFilter.trim()) filters.date = dateFilter.trim();
     if (timeFilter.trim()) filters.time = timeFilter.trim();
+    if (minSeatsFilter.trim()) filters.minSeats = minSeatsFilter.trim();
 
     setIsFilterActive(true);
     fetchRides(filters);
@@ -63,6 +66,7 @@ function App() {
     setDestinationFilter('');
     setDateFilter('');
     setTimeFilter('');
+    setMinSeatsFilter('');
     setIsFilterActive(false);
     fetchRides(); // Fetch all rides
   };
@@ -157,6 +161,26 @@ function App() {
               }}
             />
           </div>
+        </div>
+
+        <div style={{ marginTop: '10px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            Minimum Available Seats:
+          </label>
+          <input
+            type="number"
+            value={minSeatsFilter}
+            onChange={(e) => setMinSeatsFilter(e.target.value)}
+            min="0"
+            placeholder="Enter minimum seats"
+            style={{
+              width: '200px',
+              padding: '8px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              boxSizing: 'border-box'
+            }}
+          />
         </div>
 
         <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>

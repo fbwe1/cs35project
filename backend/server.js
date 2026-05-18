@@ -58,10 +58,10 @@ app.get('/api/rides', async (req, res) => {
     await simulateDbDelay(300); // Fake 300ms database read time
 
     // Get filter parameters from query string
-    const { pickupLocation, destination, date, time } = req.query;
+    const { pickupLocation, destination, date, time, minSeats } = req.query;
 
     // If no filters provided, return all rides
-    if (!pickupLocation && !destination && !date && !time) {
+    if (!pickupLocation && !destination && !date && !time && !minSeats) {
       return res.json(ridesDB);
     }
 
@@ -92,6 +92,13 @@ app.get('/api/rides', async (req, res) => {
       const searchLower = time.toLowerCase();
       filteredRides = filteredRides.filter(ride =>
         ride.time.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (minSeats) {
+      const minSeatsNum = parseInt(minSeats);
+      filteredRides = filteredRides.filter(ride =>
+        ride.available_seats >= minSeatsNum
       );
     }
 
