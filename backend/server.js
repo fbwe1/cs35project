@@ -14,11 +14,37 @@ let ridesDB = [
 //Simulating database time. 
 const simulateDbDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
-//Get rides from the database
+//Get rides from the database with optional location filtering
 app.get('/api/rides', async (req, res) => {
   try {
     await simulateDbDelay(300); // Fake 300ms database read time
-    res.json(ridesDB);
+
+    // Get filter parameters from query string
+    const { pickupLocation, destination } = req.query;
+
+    // If no filters provided, return all rides
+    if (!pickupLocation && !destination) {
+      return res.json(ridesDB);
+    }
+
+    // Apply filters
+    let filteredRides = ridesDB;
+
+    if (pickupLocation) {
+      const searchLower = pickupLocation.toLowerCase();
+      filteredRides = filteredRides.filter(ride =>
+        ride.pickup_location.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (destination) {
+      const searchLower = destination.toLowerCase();
+      filteredRides = filteredRides.filter(ride =>
+        ride.destination.toLowerCase().includes(searchLower)
+      );
+    }
+
+    res.json(filteredRides);
   } catch (error) {
     res.status(500).json({ error: "Database connection failed" });
   }
