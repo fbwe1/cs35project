@@ -1,73 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import RideCard from './RideCard';
-import PostBoard from './PostBoard';
-import './App.css';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import RideFeed from './pages/RideFeed';
+import CreateRide from './pages/CreateRide';
 
-const socket = io('http://localhost:3001');
+// ============================================================
+// TODO: DELETE THIS BLOCK WHEN AUTH IS MERGED
+// Temporary way to simulate different users for testing.
+// Usage: http://localhost:5173?userId=251
+//        http://localhost:5173?userId=999
+// Replace with real logged-in user ID from auth system.
+const params = new URLSearchParams(window.location.search);
+const currentUserId = parseInt(params.get('userId')) || 251;
+// ============================================================
 
 function App() {
-  const [rides, setRides] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const currentUserId = 251;
-
-  const fetchRides = () => {
-    fetch('http://localhost:3001/api/rides')
-      .then(res => res.json())
-      .then(data => {
-        setRides(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error fetching rides:", err);
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchRides();
-
-    socket.on('rides-update', (payload) => {
-      console.log('Real-time update received:', payload.eventType);
-
-      if (payload.eventType === 'INSERT') {
-        setRides(prev => [...prev, payload.new]);
-      } else if (payload.eventType === 'UPDATE') {
-        setRides(prev => prev.map(ride =>
-          ride.id === payload.new.id ? payload.new : ride
-        ));
-      } else if (payload.eventType === 'DELETE') {
-        setRides(prev => prev.filter(ride => ride.id !== payload.old.id));
-      }
-    });
-
-    return () => socket.off('rides-update');
-  }, []);
-
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Carpool Join/Leave Full-Stack Test</h1>
-      <p>Simulating as User ID: {currentUserId}</p>
-      
-      {loading ? (
-        <p>Loading...</p>
-      ) : rides.length > 0 ? (
-        rides.map(ride => (
-          <RideCard 
-            key={ride.id} 
-            ride={ride} 
-            currentUserId={currentUserId}
-            onUpdate={fetchRides}
-          />
-        ))
-      ) : (
-        <p style={{color: 'red'}}>No rides found.</p>
-      )}
+    <BrowserRouter>
+      <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+        {/* Nav bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '12px' }}>
+          <h1 style={{ margin: 0 }}>UCLAway</h1>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link to="/" style={{ textDecoration: 'none', color: '#333', fontWeight: 'bold' }}>Feed</Link>
+            <Link to="/create" style={{
+              textDecoration: 'none',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              padding: '8px 14px',
+              borderRadius: '4px',
+              fontWeight: 'bold'
+            }}>
+              + Create Ride
+            </Link>
+            {/* TODO: DELETE - remove this debug label when auth is merged */}
+            <span style={{ color: '#888', fontSize: '13px' }}>User ID: {currentUserId}</span>
+          </div>
+        </div>
 
-      <hr />
-      <PostBoard />
-    </div>
+        {/* Pages */}
+        <Routes>
+          <Route path="/" element={<RideFeed currentUserId={currentUserId} />} />
+          <Route path="/create" element={<CreateRide currentUserId={currentUserId} />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
 }
 

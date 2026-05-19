@@ -15,7 +15,7 @@ const RideCard = ({ ride, currentUserId, onUpdate }) => {
     setLoading(true);
     setErrorMsg("");
     const action = hasJoined ? 'leave' : 'join';
-    
+
     try {
       const response = await fetch(`http://localhost:3001/api/rides/${ride.id}/${action}`, {
         method: 'POST',
@@ -72,37 +72,54 @@ const RideCard = ({ ride, currentUserId, onUpdate }) => {
   const statusText = isFull ? 'Full' : `Missing ${missingCount}`;
   const statusColor = isFull ? '#f0a500' : '#2196F3';
 
+  // Format timestamp
+  const formattedDate = ride.created_at
+    ? new Date(ride.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null;
+
   return (
     <div style={{ border: '1px solid #ccc', padding: '16px', margin: '10px 0', borderRadius: '8px', maxWidth: '400px' }}>
+      
+      {/* Title and status badge */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>{ride.pickup_location} ➡️ {ride.destination}</h3>
+        <h3 style={{ margin: 0 }}>{ride.title || `${ride.pickup_location} ➡️ ${ride.destination}`}</h3>
         <span style={{
           backgroundColor: statusColor,
           color: 'white',
           padding: '3px 10px',
           borderRadius: '12px',
           fontSize: '13px',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          marginLeft: '8px',
+          whiteSpace: 'nowrap'
         }}>
           {statusText}
         </span>
       </div>
 
-      <p><strong>Riders:</strong> {(ride.passengers || []).length + 1} / {ride.total_seats}</p>
+      {/* Route */}
+      <p style={{ color: '#888', fontSize: '13px', margin: '4px 0' }}>
+         {ride.pickup_location} to {ride.destination}
+      </p>
 
-      {/* Show creator label instead of join/leave */}
+      {/* Description */}
+      {ride.description && (
+        <p style={{ fontSize: '14px', margin: '6px 0' }}>{ride.description}</p>
+      )}
+
+      {/* Riders and timestamp */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <p style={{ margin: '4px 0' }}><strong>Riders:</strong> {(ride.passengers || []).length + 1} / {ride.total_seats}</p>
+        {formattedDate && <span style={{ color: '#aaa', fontSize: '12px' }}>{formattedDate}</span>}
+      </div>
+
       {isCreator ? (
-        <p style={{ 
-          textAlign: 'center', 
-          color: '#888', 
-          fontSize: '13px', 
-          margin: '8px 0'
-        }}>
+        <p style={{ textAlign: 'center', color: '#888', fontSize: '13px', margin: '8px 0' }}>
           You created this ride
         </p>
       ) : (
-        <button 
-          onClick={handleJoinLeave} 
+        <button
+          onClick={handleJoinLeave}
           disabled={isDisabled}
           style={{
             backgroundColor: buttonColor,
@@ -113,18 +130,17 @@ const RideCard = ({ ride, currentUserId, onUpdate }) => {
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             fontWeight: 'bold',
             width: '100%',
-            marginBottom: '0'
+            marginTop: '8px'
           }}
         >
-          {loading ? "Processing..." : 
-           hasJoined ? "Leave Ride" : 
+          {loading ? "Processing..." :
+           hasJoined ? "Leave Ride" :
            isFull ? "Ride Full" : "Join Ride"}
         </button>
       )}
 
       {errorMsg && <p style={{ color: 'red', fontSize: '14px', marginTop: '6px' }}>{errorMsg}</p>}
 
-      {/* Only show Remove button if current user is the creator */}
       {isCreator && (
         <button
           onClick={handleRemove}
