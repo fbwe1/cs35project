@@ -19,7 +19,14 @@ function App() {
       <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
         {/* Nav bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '12px' }}>
-          <h1 style={{ margin: 0 }}>UCLAway</h1>
+          <img
+            src="/logo.svg"
+            alt="UCLAway Logo"
+            style={{
+              height: '90px',
+              objectFit: 'contain'
+            }}
+          />
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Link to="/" style={{ textDecoration: 'none', color: '#333', fontWeight: 'bold' }}>Feed</Link>
             <Link to="/create" style={{
